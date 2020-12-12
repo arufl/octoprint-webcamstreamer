@@ -96,25 +96,12 @@
             <span class="help-block">The OctoPi webcam frame rate (default: {{ plugin_webcamstreamer_frame_rate_default | escape }} fps).</span>
         </div>
     </div>
-    <div class="control-group">
-        <label class="control-label">{{ _('Docker Image') }}</label>
-        <div class="controls">
-            <input type="text" class="input-block-level" data-bind="value: settings.plugins.webcamstreamer.docker_image">
-            <span class="help-block">The name and tag of the Docker image to use (default: {{ plugin_webcamstreamer_fdocker_image_default | escape }}).</span>
-        </div>
-    </div>
-    <div class="control-group">
-        <label class="control-label">{{ _('Docker Container') }}</label>
-        <div class="controls">
-            <input type="text" class="input-block-level" data-bind="value: settings.plugins.webcamstreamer.docker_container">
-            <span class="help-block">The name given to the running Docker container (default: {{ plugin_webcamstreamer_docker_container_default | escape }}).</span>
-        </div>
-    </div>
+
         <div class="control-group">
         <label class="control-label">{{ _('FFmpeg Command') }}</label>
         <div class="controls">
             <input type="text" class="input-block-level" data-bind="value: settings.plugins.webcamstreamer.ffmpeg_cmd">
-            <span class="help-block"><b>Expert Use Only!</b> This is the FFmpeg command that is passed to the Docker container for streaming activity. Variable substitution is performed to insert the appropriate values into the command line. Consult the FFmpeg manual for details on its use.</span>
+            <span class="help-block"><b>Expert Use Only!</b> This is the FFmpeg command that is passed for streaming activity. Variable substitution is performed to insert the appropriate values into the command line. Consult the FFmpeg manual for details on its use.</span>
         </div>
     </div>
     <div class="ffmpeg_additional">
