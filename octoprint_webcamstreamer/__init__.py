@@ -1,6 +1,7 @@
 # coding=utf-8
 from __future__ import absolute_import
-import os
+import subprocess
+import shlex
 ### (Don't forget to remove me)
 # This is a basic skeleton for your plugin's __init__.py. You probably want to adjust the class name of your plugin
 # as well as the plugin mixins it's subclassing from. This is really just a basic skeleton to get you started,
@@ -21,7 +22,7 @@ class WebcamStreamerPlugin(octoprint.plugin.StartupPlugin,
 
     def __init__(self):
 
-    		self.streamingyes=0
+        self.streamingyes=0
         self.frame_rate_default = 5
         self.ffmpeg_cmd_default = (
             "ffmpeg -re -f mjpeg -framerate 5 -i {webcam_url} "                                                                   # Video input
@@ -128,6 +129,8 @@ class WebcamStreamerPlugin(octoprint.plugin.StartupPlugin,
             filters.append("vflip")
         if self._settings.global_get(["webcam","rotate90"]):
             filters.append("transpose=clock")
+        if self._settings.get(["filters"]):
+            filters.append(self._settings.get(["filters"]))
         if len(filters) == 0:
             filters.append("null")
         gop_size = int(self._settings.get(["frame_rate"])) * 2
@@ -140,12 +143,14 @@ class WebcamStreamerPlugin(octoprint.plugin.StartupPlugin,
             filter = ",".join(filters))
         self._logger.info("Launching command " + command)
         try:
-            r = os.system(command)
-            self.streamingyes=1
+            r=subprocess.Popen(shlex.split(command),stdout=subprocess.PIPE,close_fds=True,stderr=subprocess.STDOUT)
+            
         except Exception as e:
             self._logger.error(str(e))
+            self._logger.error(r.communicate()[0])
             self._plugin_manager.send_plugin_message(self._identifier, dict(error=str(e),status=True,streaming=False))
         else:
+            self.streamingyes=1
             self._logger.info("Stream started successfully")
             self._plugin_manager.send_plugin_message(self._identifier, dict(success="Stream started",status=True,streaming=True))
         return
@@ -154,10 +159,12 @@ class WebcamStreamerPlugin(octoprint.plugin.StartupPlugin,
         
         if self.streamingyes:
             try:
-                n = os.system('killall ffmpeg')
+                
+                r=subprocess.Popen(['pkill','ffmpeg'],stdout=subprocess.PIPE,close_fds=True,stderr=subprocess.STDOUT)
                 self.streamingyes=0
             except Exception as e:
                 self._logger.error(str(e))
+                self._logger.error(r.communicate()[0])
                 self._plugin_manager.send_plugin_message(self._identifier, dict(error=str(e),status=True,streaming=False))
             else:
                 self._logger.info("Stream stopped successfully")
@@ -166,8 +173,8 @@ class WebcamStreamerPlugin(octoprint.plugin.StartupPlugin,
             self._plugin_manager.send_plugin_message(self._identifier, dict(status=True,streaming=False))
 
     def _check_stream(self):
-        
-        if self.streamingyes:
+        process=subprocess.Popen(['pgrep','-x', 'ffmpeg'],stdout=subprocess.PIPE,close_fds=True,stderr=subprocess.STDOUT)
+        if process.communicate()[0]:
             self._logger.info("Webcam is streaming " )
             self._plugin_manager.send_plugin_message(self._identifier, dict(status=True,streaming=True))
         else:
