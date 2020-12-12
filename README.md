@@ -1,4 +1,4 @@
-# OctoPrint-WebcamStreamer
+# OctoPrint-WebcamStreamer without docker
 
 ## Overview 
 
@@ -15,38 +15,14 @@ Inspired by and based on the work by
 
 ## Requirements for Streaming
 
-Although this plugin should work with a wide variety of webcam, it has only been tested with a Raspberry Pi cam running on [OctoPi](https://octoprint.org/download/) and made available via OctoPrint mjpeg-streamer. This plugin relies on a [Docker](https://www.docker.com/) container running [FFmpeg](https://www.ffmpeg.org/) to convert the mjpeg-streamer video stream and pipe it to a live streaming service. The YouTube Live and Twitch.Tv streaming services have been tested.
+Although this plugin should work with a wide variety of webcam, it has only been tested with a Raspberry Pi cam running on [OctoPi](https://octoprint.org/download/) and made available via OctoPrint mjpeg-streamer. This plugin relies on  [FFmpeg](https://www.ffmpeg.org/) to convert the mjpeg-streamer video stream and pipe it to a live streaming service.
 
 ## Installation
 
-Using `ssh` access the OctoPi and install `docker`:
+Using `ssh` access the OctoPi and install `ffpmeg`:
 
-    curl -fsSL get.docker.com -o get-docker.sh && sh get-docker.sh
-    sudo usermod -aG docker pi
-    sudo systemctl enable docker
-    sudo reboot now
+    sudo apt install ffmpeg
     
-2-3 minutes after the reboot, ssh back in and test that docker is working:
-
-    docker run hello-world
-
-You should see something like this.
-
-<img src="https://cdn-images-1.medium.com/max/800/1*QtTDQb8cl_Mv-ZIT8fa9Lw.png">
-
-If not, [try this page](https://medium.freecodecamp.org/the-easy-way-to-set-up-docker-on-a-raspberry-pi-7d24ced073ef) for troubleshooting.
-
-Pull the `adilinden/rpi-ffmpeg` image:
-
-    docker pull adilinden/rpi-ffmpeg:latest
-
-Install OctoPrint-WebcamStreamer via one of these 3 methods, also in-depth explained on the official OctoPrint [Installing a plugin](https://plugins.octoprint.org/help/installation/) page.
-
-1. Open the plugin repository in the Plugin Manager's settings dialog, search for "OctoPrint-WebcamStreamer" and install with the "Install" button.
-
-2. Open the plugin repository in the Plugin Manager's settings dialog, click on "Get more..." and enter the `https://github.com/adilinden-oss/octoprint-webcamstreamer/archive/master.zip` URL in the "... from URL" box. Click the Install button to complete the installation.
-
-3. Access the OctoPi command line and run the `~/oprint/bin/pip install https://github.com/adilinden-oss/octoprint-webcamstreamer/archive/master.zip` command.
 
 ## Setup
 
@@ -84,9 +60,6 @@ Advanced option allow for modification of the [FFmpeg](https://www.ffmpeg.org/) 
 
 - "Webcam Frame Rate" default is 5 frames per second which is appropriate for the Raspberry Pi webcam.
 
-- "Docker Image" default is `adilinden/rpi-ffmpeg:latest`. This value needs to match the docker image installed in the setup steps.
-
-- "Docker Container" default is `WebStreamer`. This value is rather arbitrary but the default makes sense (to me).
 
 - "FFmpeg Command" allows for customization of the `ffmpeg` command line. Variable substitution is performed to insert setup values into the `ffmpeg` command line.
 
