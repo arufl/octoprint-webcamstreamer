@@ -33,7 +33,6 @@ plugin_url = "https://github.com/adilinden-oss/octoprint-webcamstreamer"
 plugin_license = "AGPLv3"
 
 # Any additional requirements besides OctoPrint should be listed here
-plugin_requires = ["docker==2.7.0"]
 
 plugin_pythoncompat = ">=2.7,<4"
 
