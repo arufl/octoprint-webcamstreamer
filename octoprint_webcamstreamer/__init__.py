@@ -21,7 +21,7 @@ class WebcamStreamerPlugin(octoprint.plugin.StartupPlugin,
 
     def __init__(self):
 
-    
+    		self.streamingyes=0
         self.frame_rate_default = 5
         self.ffmpeg_cmd_default = (
             "ffmpeg -re -f mjpeg -framerate 5 -i {webcam_url} "                                                                   # Video input
