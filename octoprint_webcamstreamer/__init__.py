@@ -1,6 +1,6 @@
 # coding=utf-8
 from __future__ import absolute_import
-
+import os
 ### (Don't forget to remove me)
 # This is a basic skeleton for your plugin's __init__.py. You probably want to adjust the class name of your plugin
 # as well as the plugin mixins it's subclassing from. This is really just a basic skeleton to get you started,
@@ -27,7 +27,7 @@ class WebcamStreamerPlugin(octoprint.plugin.StartupPlugin,
             "ffmpeg -re -f mjpeg -framerate 5 -i {webcam_url} "                                                                   # Video input
             "-ar 44100 -ac 2 -acodec pcm_s16le -f s16le -ac 2 -i /dev/zero "                                               # Audio input
             "-acodec aac -ab 128k "                                                                                        # Audio output
-            "-vcodec h264 -pix_fmt yuv420p -framerate {frame_rate} -g {gop_size} -strict experimental -filter:v {filter} " # Video output
+            "-vcodec h264_omx -pix_fmt yuv420p -framerate {frame_rate} -g {gop_size} -strict experimental -filter:v {filter} " # Video output
             "-f flv {stream_url}")                                                                                         # Output stream
 
 
@@ -121,51 +121,42 @@ class WebcamStreamerPlugin(octoprint.plugin.StartupPlugin,
     ##-- Utility Functions
     
     def _start_stream(self):
-        self._get_container()
-        if not self.container:
-            filters = []
-            if self._settings.global_get(["webcam","flipH"]):
-                filters.append("hflip")
-            if self._settings.global_get(["webcam","flipV"]):
-                filters.append("vflip")
-            if self._settings.global_get(["webcam","rotate90"]):
-                filters.append("transpose=clock")
-            if len(filters) == 0:
-                filters.append("null")
-            gop_size = int(self._settings.get(["frame_rate"])) * 2
-            # Substitute vars in ffmpeg command
-            docker_cmd = self._settings.get(["ffmpeg_cmd"]).format(
-                webcam_url = self._settings.get(["webcam_url"]),
-                stream_url = self._settings.get(["stream_url"]),
-                frame_rate = self._settings.get(["frame_rate"]),
-                gop_size = gop_size,
-                filter = ",".join(filters))
-            self._logger.info("Launching docker container '" + self._settings.get(["docker_container"]) + "':\n" + "|  " + docker_cmd)
-            try:
-                self._get_client()
-                self.container = self.client.containers.run(
-                    self._settings.get(["docker_image"]),
-                    command = docker_cmd,
-                    detach = True,
-                    privileged = False,
-                    devices = ["/dev/vchiq"],
-                    name = self._settings.get(["docker_container"]),
-                    auto_remove = True,
-					network_mode = "host")
-            except Exception as e:
-                self._logger.error(str(e))
-                self._plugin_manager.send_plugin_message(self._identifier, dict(error=str(e),status=True,streaming=False))
-            else:
-                self._logger.info("Stream started successfully")
-                self._plugin_manager.send_plugin_message(self._identifier, dict(success="Stream started",status=True,streaming=True))
+          
+        filters = []
+        if self._settings.global_get(["webcam","flipH"]):
+            filters.append("hflip")
+        if self._settings.global_get(["webcam","flipV"]):
+            filters.append("vflip")
+        if self._settings.global_get(["webcam","rotate90"]):
+            filters.append("transpose=clock")
+        if len(filters) == 0:
+            filters.append("null")
+        gop_size = int(self._settings.get(["frame_rate"])) * 2
+        # Substitute vars in ffmpeg command
+        command = self._settings.get(["ffmpeg_cmd"]).format(
+            webcam_url = self._settings.get(["webcam_url"]),
+            stream_url = self._settings.get(["stream_url"]),
+            frame_rate = self._settings.get(["frame_rate"]),
+            gop_size = gop_size,
+            filter = ",".join(filters))
+        self._logger.info("Launching command " + command)
+        try:
+            r = os.system(command)
+            self.streamingyes=1
+        except Exception as e:
+            self._logger.error(str(e))
+            self._plugin_manager.send_plugin_message(self._identifier, dict(error=str(e),status=True,streaming=False))
+        else:
+            self._logger.info("Stream started successfully")
+            self._plugin_manager.send_plugin_message(self._identifier, dict(success="Stream started",status=True,streaming=True))
         return
         
     def _stop_stream(self):
-        self._get_container()
-        if self.container:
+        
+        if self.streamingyes:
             try:
-                self.container.stop()
-                self.container = None
+                n = os.system('killall ffmpeg')
+                self.streamingyes=0
             except Exception as e:
                 self._logger.error(str(e))
                 self._plugin_manager.send_plugin_message(self._identifier, dict(error=str(e),status=True,streaming=False))
@@ -176,9 +167,9 @@ class WebcamStreamerPlugin(octoprint.plugin.StartupPlugin,
             self._plugin_manager.send_plugin_message(self._identifier, dict(status=True,streaming=False))
 
     def _check_stream(self):
-        self._get_container()
-        if self.container:
-            self._logger.info("%s is streaming " % self.container.name)
+        
+        if self.streamingyes:
+            self._logger.info("Webcam is streaming " )
             self._plugin_manager.send_plugin_message(self._identifier, dict(status=True,streaming=True))
         else:
             self._logger.info("stream is inactive ")
@@ -221,4 +212,3 @@ def __plugin_load__():
     __plugin_hooks__ = {
         "octoprint.plugin.softwareupdate.check_config": __plugin_implementation__.get_update_information
     }
-
