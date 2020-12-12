@@ -41,7 +41,6 @@ class WebcamStreamerPlugin(octoprint.plugin.StartupPlugin,
             + "|  webcam_url = " + self._settings.get(["webcam_url"]) + "\n"
             + "|  frame_rate = " + str(self._settings.get(["frame_rate"])) + "\n"
             + "|  ffmpeg_cmd = " + self._settings.get(["ffmpeg_cmd"]))
-        self._get_image()
         self._check_stream()
 
     ##~~ TemplatePlugin
