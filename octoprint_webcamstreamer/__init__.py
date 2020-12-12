@@ -11,7 +11,6 @@ from __future__ import absolute_import
 
 import octoprint.plugin
 from octoprint.server import user_permission
-import docker
 
 class WebcamStreamerPlugin(octoprint.plugin.StartupPlugin,
                            octoprint.plugin.TemplatePlugin,
@@ -21,10 +20,7 @@ class WebcamStreamerPlugin(octoprint.plugin.StartupPlugin,
                            octoprint.plugin.EventHandlerPlugin):
 
     def __init__(self):
-        # Docker connection and container object
-        self.client = None
-        self.image = None
-        self.container = None
+
     
         self.frame_rate_default = 5
         self.ffmpeg_cmd_default = (
@@ -33,8 +29,7 @@ class WebcamStreamerPlugin(octoprint.plugin.StartupPlugin,
             "-acodec aac -ab 128k "                                                                                        # Audio output
             "-vcodec h264 -pix_fmt yuv420p -framerate {frame_rate} -g {gop_size} -strict experimental -filter:v {filter} " # Video output
             "-f flv {stream_url}")                                                                                         # Output stream
-        self.docker_image_default = "adilinden/rpi-ffmpeg:latest"
-        self.docker_container_default = "WebStreamer"
+
 
     ##~~ StartupPlugin
     
@@ -44,8 +39,6 @@ class WebcamStreamerPlugin(octoprint.plugin.StartupPlugin,
             + "|  embed_url = " + self._settings.get(["embed_url"]) + "\n"
             + "|  stream_url = " + self._settings.get(["stream_url"]) + "\n"
             + "|  webcam_url = " + self._settings.get(["webcam_url"]) + "\n"
-            + "|  docker_image = " + self._settings.get(["docker_image"]) + "\n"
-            + "|  docker_container = " + self._settings.get(["docker_container"]) + "\n"
             + "|  frame_rate = " + str(self._settings.get(["frame_rate"])) + "\n"
             + "|  ffmpeg_cmd = " + self._settings.get(["ffmpeg_cmd"]))
         self._get_image()
@@ -59,9 +52,7 @@ class WebcamStreamerPlugin(octoprint.plugin.StartupPlugin,
     def get_template_vars(self):
         return dict(
             frame_rate_default = self.frame_rate_default,
-            ffmpeg_cmd_default = self.ffmpeg_cmd_default,
-            docker_image_default = self.docker_image_default,
-            docker_container_default = self.docker_container_default
+            ffmpeg_cmd_default = self.ffmpeg_cmd_default
         )
 
     ##~~ SettingsPlugin mixin
@@ -76,14 +67,10 @@ class WebcamStreamerPlugin(octoprint.plugin.StartupPlugin,
             auto_start = False,
             ffmpeg_cmd = self.ffmpeg_cmd_default,
             frame_rate = self.frame_rate_default,
-            docker_image = self.docker_image_default,
-            docker_container = self.docker_container_default,
 
             # Default values
             frame_rate_default = self.frame_rate_default,
-            ffmpeg_cmd_default = self.ffmpeg_cmd_default,
-            docker_image_default = self.docker_image_default,
-            docker_container_default = self.docker_container_default
+            ffmpeg_cmd_default = self.ffmpeg_cmd_default
         )
 
     def get_settings_restricted_paths(self):
@@ -132,33 +119,6 @@ class WebcamStreamerPlugin(octoprint.plugin.StartupPlugin,
             self._stop_stream()
 
     ##-- Utility Functions
-
-    def _get_client(self):
-        self.client = docker.from_env()
-        try:
-            self.client.ping()
-        except Exception as e:
-            self._logger.error("Docker not responding: " + str(e))
-            self.client = None
-
-    def _get_image(self):
-        self._get_client()
-        if self.client:
-            try:
-                self.image = self.client.images.get(self._settings.get(["docker_image"]))
-            except Exception as e:
-                self._logger.error(str(e))
-                self._logger.error("Please read installation instructions!")
-                self.image = None
-
-    def _get_container(self):
-        self._get_client()
-        if self.client:
-            try:
-                self.container = self.client.containers.get(self._settings.get(["docker_container"]))
-            except Exception as e:
-                self.client = None
-                self.container = None
     
     def _start_stream(self):
         self._get_container()
@@ -169,7 +129,7 @@ class WebcamStreamerPlugin(octoprint.plugin.StartupPlugin,
             if self._settings.global_get(["webcam","flipV"]):
                 filters.append("vflip")
             if self._settings.global_get(["webcam","rotate90"]):
-                filters.append("transpose=cclock")
+                filters.append("transpose=clock")
             if len(filters) == 0:
                 filters.append("null")
             gop_size = int(self._settings.get(["frame_rate"])) * 2
@@ -232,17 +192,17 @@ class WebcamStreamerPlugin(octoprint.plugin.StartupPlugin,
         # for details.
         return dict(
             webcamstreamer=dict(
-                displayName="WebcamStreamer Plugin",
+                displayName="WebcamStreamer Plugin without docker",
                 displayVersion=self._plugin_version,
 
                 # version check: github repository
                 type="github_release",
-                user="adilinden-oss",
+                user="arufl",
                 repo="octoprint-webcamstreamer",
                 current=self._plugin_version,
 
                 # update method: pip
-                pip="https://github.com/adilinden-oss/octoprint-webcamstreamer/archive/{target_version}.zip"
+                pip="https://github.com/arufl/octoprint-webcamstreamer/archive/{target_version}.zip"
             )
         )
 
