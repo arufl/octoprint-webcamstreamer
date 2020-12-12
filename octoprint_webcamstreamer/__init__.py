@@ -2,6 +2,9 @@
 from __future__ import absolute_import
 import subprocess
 import shlex
+import os
+from os.path import expanduser
+home = expanduser("~")
 ### (Don't forget to remove me)
 # This is a basic skeleton for your plugin's __init__.py. You probably want to adjust the class name of your plugin
 # as well as the plugin mixins it's subclassing from. This is really just a basic skeleton to get you started,
@@ -29,7 +32,7 @@ class WebcamStreamerPlugin(octoprint.plugin.StartupPlugin,
             "-ar 44100 -ac 2 -acodec pcm_s16le -f s16le -ac 2 -i /dev/zero "                                               # Audio input
             "-acodec aac -ab 128k "                                                                                        # Audio output
             "-vcodec h264_omx -pix_fmt yuv420p -framerate {frame_rate} -g {gop_size} -strict experimental -filter:v {filter} " # Video output
-            "-f flv {stream_url}")                                                                                         # Output stream
+            "-f flv {stream_url} -v warning")                                                                                         # Output stream
 
 
     ##~~ StartupPlugin
@@ -43,8 +46,8 @@ class WebcamStreamerPlugin(octoprint.plugin.StartupPlugin,
             + "|  frame_rate = " + str(self._settings.get(["frame_rate"])) + "\n"
             + "|  filters = " + str(self._settings.get(["filters"])) + "\n"
             + "|  ffmpeg_cmd = " + self._settings.get(["ffmpeg_cmd"]))
+        
         self._check_stream()
-
     ##~~ TemplatePlugin
     
     def get_template_configs(self):
@@ -64,6 +67,7 @@ class WebcamStreamerPlugin(octoprint.plugin.StartupPlugin,
             embed_url = "",
             stream_url = "",
             webcam_url = "",
+            filters = "",
             streaming = False,
             auto_start = False,
             ffmpeg_cmd = self.ffmpeg_cmd_default,
@@ -144,11 +148,12 @@ class WebcamStreamerPlugin(octoprint.plugin.StartupPlugin,
             filter = ",".join(filters))
         self._logger.info("Launching command " + command)
         try:
-            r=subprocess.Popen(shlex.split(command),stdout=subprocess.PIPE,close_fds=True,stderr=subprocess.STDOUT)
+            
+            logfile = open(expanduser("~")+'/.octoprint/logs/ffmpeglogfile', 'a+')
+            self.ffmpeg_process=subprocess.Popen(shlex.split(command),stdout=logfile,universal_newlines=True,close_fds=True,stderr=logfile)
             
         except Exception as e:
             self._logger.error(str(e))
-            self._logger.error(r.communicate()[0])
             self._plugin_manager.send_plugin_message(self._identifier, dict(error=str(e),status=True,streaming=False))
         else:
             self.streamingyes=1
@@ -161,11 +166,10 @@ class WebcamStreamerPlugin(octoprint.plugin.StartupPlugin,
         if self.streamingyes:
             try:
                 
-                r=subprocess.Popen(['pkill','ffmpeg'],stdout=subprocess.PIPE,close_fds=True,stderr=subprocess.STDOUT)
+                self.ffmpeg_process.terminate()
                 self.streamingyes=0
             except Exception as e:
                 self._logger.error(str(e))
-                self._logger.error(r.communicate()[0])
                 self._plugin_manager.send_plugin_message(self._identifier, dict(error=str(e),status=True,streaming=False))
             else:
                 self._logger.info("Stream stopped successfully")
@@ -174,13 +178,18 @@ class WebcamStreamerPlugin(octoprint.plugin.StartupPlugin,
             self._plugin_manager.send_plugin_message(self._identifier, dict(status=True,streaming=False))
 
     def _check_stream(self):
-        process=subprocess.Popen(['pgrep','-x', 'ffmpeg'],stdout=subprocess.PIPE,close_fds=True,stderr=subprocess.STDOUT)
-        if process.communicate()[0]:
-            self._logger.info("Webcam is streaming " )
-            self._plugin_manager.send_plugin_message(self._identifier, dict(status=True,streaming=True))
-        else:
-            self._logger.info("stream is inactive ")
-            self._plugin_manager.send_plugin_message(self._identifier, dict(status=True,streaming=False))
+        try:
+            poll=self.ffmpeg_process.poll()
+            if poll==None:
+                self._logger.info("Webcam is streaming " )
+                self._plugin_manager.send_plugin_message(self._identifier, dict(status=True,streaming=True))
+            else:
+                self._logger.info("stream is inactive ")
+                self._plugin_manager.send_plugin_message(self._identifier, dict(status=True,streaming=False))
+        except Exception as e:
+                self._logger.info("stream is inactive ")
+                self._plugin_manager.send_plugin_message(self._identifier, dict(status=True,streaming=False))
+
 
     ##~~ Softwareupdate hook
 
