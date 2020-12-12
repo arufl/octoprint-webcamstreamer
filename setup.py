@@ -14,7 +14,7 @@ plugin_package = "octoprint_webcamstreamer"
 plugin_name = "OctoPrint-WebcamStreamer"
 
 # The plugin's version. Can be overwritten within OctoPrint's internal data via __plugin_version__ in the plugin module
-plugin_version = "0.1.1"
+plugin_version = "0.1.1-arufl"
 
 # The plugin's description. Can be overwritten within OctoPrint's internal data via __plugin_description__ in the plugin
 # module
@@ -27,7 +27,7 @@ plugin_author = "Adi Linden"
 plugin_author_email = "adi@adis.ca"
 
 # The plugin's homepage URL. Can be overwritten within OctoPrint's internal data via __plugin_url__ in the plugin module
-plugin_url = "https://github.com/adilinden-oss/octoprint-webcamstreamer"
+plugin_url = "https://github.com/arufl/octoprint-webcamstreamer"
 
 # The plugin's license. Can be overwritten within OctoPrint's internal data via __plugin_license__ in the plugin module
 plugin_license = "AGPLv3"
