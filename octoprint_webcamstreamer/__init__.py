@@ -31,7 +31,7 @@ class WebcamStreamerPlugin(octoprint.plugin.StartupPlugin,
             "ffmpeg -re -f mjpeg -framerate 5 -i {webcam_url} "                                                                   # Video input
             "-ar 44100 -ac 2 -acodec pcm_s16le -f s16le -ac 2 -i /dev/zero "                                               # Audio input
             "-acodec aac -ab 128k "                                                                                        # Audio output
-            "-vcodec h264_omx -pix_fmt yuv420p -framerate {frame_rate} -g {gop_size} -strict experimental -filter:v {filter} " # Video output
+            "-vcodec h264_omx -b:v 2M -pix_fmt yuv420p -framerate {frame_rate} -g {gop_size} -strict experimental -filter:v {filter} " # Video output
             "-f flv {stream_url} -v warning")                                                                                         # Output stream
 
 
